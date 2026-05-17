@@ -1,8 +1,13 @@
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.api import auth
+from app.database import engine, Base
 
 load_dotenv()
+
+# Criar tabelas
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="AI Marketing Hub API")
 
@@ -20,6 +25,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Rotas
+app.include_router(auth.router, prefix="/api/auth", tags=["autenticacao"])
 
 @app.get("/")
 async def root():
