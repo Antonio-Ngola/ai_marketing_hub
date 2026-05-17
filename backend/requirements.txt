@@ -1,0 +1,50 @@
+# Core FastAPI
+fastapi==0.104.1
+uvicorn==0.24.0  # servidor ASGI para rodar o FastAPI
+
+# Banco de Dados
+sqlalchemy==1.4.52  # ORM compatível com databases[asyncpg]
+asyncpg==0.29.0  # driver PostgreSQL assíncrono
+databases[asyncpg]==0.8.0  # camada assíncrona para DB
+
+# Validação e Schemas
+pydantic==2.5.0  # validação de schemas
+pydantic-settings==2.1.0  # configurações com Pydantic
+
+# Autenticação e Segurança
+python-jose==3.3.0  # JWT e OAuth2
+passlib[bcrypt]==1.7.4  # hashing de senhas
+python-multipart==0.0.5  # suporte a uploads de arquivos
+
+# Requisições HTTP
+httpx==0.24.1  # cliente HTTP assíncrono para integrações externas
+aiohttp==3.9.1  # para chamadas assíncronas
+requests==2.31.0  # requisições HTTP simples
+
+# Variáveis de Ambiente
+python-dotenv==1.0.0  # variáveis de ambiente
+
+# Tarefas Assíncronas (opcional)
+celery==5.3.4  # filas de tarefas assíncronas
+redis==5.0.1  # cache e filas (se usar Redis)
+
+# ===== INTEGRAÇÕES COM IA E APIs EXTERNAS =====
+
+# OpenAI / GPT
+openai==1.3.8  # OpenAI API (ChatGPT, GPT-4)
+
+# APIs de IA Alternativas
+anthropic==0.7.8  # Anthropic Claude API
+cohere==4.38  # Cohere API para geração de texto
+
+# Redes Sociais
+tweepy==4.14.0  # Twitter/X API
+python-telegram-bot==20.3  # Telegram Bot API
+
+# SMS e Comunicação
+twilio==8.10.0  # SMS, WhatsApp, Voz
+
+# Processamento e Storage
+boto3==1.29.7  # AWS S3, SQS, etc
+google-cloud-storage==2.14.0  # Google Cloud Storage
+
