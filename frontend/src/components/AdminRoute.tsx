@@ -13,9 +13,7 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     return <Navigate to="/login" />;
   }
 
-  const isAdmin = user.is_admin === true || user.email === 'admin@aimarketing.com';
-  
-  if (!isAdmin) {
+  if (!user.is_admin) {
     return <Navigate to="/dashboard" />;
   }
 
