@@ -1,17 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
-from jose import JWTError, jwt
+from datetime import timedelta
 import hashlib
 import secrets
 from app.database import get_db
 from app.models import Usuario
 from app.schemas.usuario import UsuarioCreate, UsuarioResponse, Token
 from app.core.config import settings
+from app.core.security import create_access_token, get_current_user
 
 router = APIRouter()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 # Função simples de hash (apenas para teste - NÃO use em produção!)
 def get_password_hash(password: str) -> str:
@@ -30,34 +29,6 @@ def authenticate_user(db: Session, email: str, password: str):
     user = db.query(Usuario).filter(Usuario.email == email).first()
     if not user or not verify_password(password, user.senha_hash):
         return False
-    return user
-
-def create_access_token(data: dict, expires_delta: timedelta = None):
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
-    return encoded_jwt
-
-async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        email: str = payload.get("sub")
-        if email is None:
-            raise credentials_exception
-    except JWTError:
-        raise credentials_exception
-    user = db.query(Usuario).filter(Usuario.email == email).first()
-    if user is None:
-        raise credentials_exception
     return user
 
 @router.post("/register", response_model=UsuarioResponse)
@@ -95,4 +66,12 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 
 @router.get("/me", response_model=UsuarioResponse)
 def read_users_me(current_user: Usuario = Depends(get_current_user)):
-    return current_user
+    return {
+        "id": current_user.id,
+        "nome": current_user.nome,
+        "email": current_user.email,
+        "telefone": current_user.telefone,
+        "is_ativo": current_user.is_ativo,
+        "is_admin": getattr(current_user, 'is_admin', False),
+        "criado_em": current_user.criado_em
+    }

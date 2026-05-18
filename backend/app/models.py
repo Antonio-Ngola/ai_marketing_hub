@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey, Numeric, Date
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import relationship
@@ -14,18 +14,22 @@ class Usuario(Base):
     telefone = Column(String(20))
     is_ativo = Column(Boolean, default=True)
     is_admin = Column(Boolean, default=False)
+    is_verified = Column(Boolean, default=False)
+    verification_code = Column(String(10), nullable=True)
     criado_em = Column(DateTime, server_default=func.now())
     atualizado_em = Column(DateTime, server_default=func.now(), onupdate=func.now())
     
     # Relacionamentos
     conteudos = relationship("Conteudo", back_populates="usuario", cascade="all, delete-orphan")
+    campanhas = relationship("Campanha", back_populates="usuario", cascade="all, delete-orphan")
+    contas_sociais = relationship("ContaSocial", back_populates="usuario", cascade="all, delete-orphan")
 
 class Conteudo(Base):
     __tablename__ = "conteudos"
     
     id = Column(Integer, primary_key=True, autoincrement=True)
     usuario_id = Column(Integer, ForeignKey("usuarios.id", ondelete="CASCADE"), nullable=False)
-    conta_social_id = Column(Integer, nullable=True)
+    conta_social_id = Column(Integer, ForeignKey("contas_sociais.id", ondelete="SET NULL"), nullable=True)
     tipo_conteudo = Column(String(20), nullable=False)
     texto_conteudo = Column(Text, nullable=True)
     url_midia = Column(Text, nullable=True)
@@ -40,3 +44,41 @@ class Conteudo(Base):
     
     # Relacionamentos
     usuario = relationship("Usuario", back_populates="conteudos")
+    conta_social = relationship("ContaSocial", back_populates="conteudos")
+
+class Campanha(Base):
+    __tablename__ = "campanhas"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    usuario_id = Column(Integer, ForeignKey("usuarios.id", ondelete="CASCADE"), nullable=False)
+    nome = Column(String(100), nullable=False)
+    tipo = Column(String(50), nullable=False)
+    descricao = Column(Text, nullable=True)
+    data_inicio = Column(Date, nullable=False)
+    data_fim = Column(Date, nullable=False)
+    orcamento = Column(Numeric(10, 2), nullable=True)
+    status = Column(String(20), default='ativa')
+    criado_em = Column(DateTime, server_default=func.now())
+    atualizado_em = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    
+    # Relacionamentos
+    usuario = relationship("Usuario", back_populates="campanhas")
+
+class ContaSocial(Base):
+    __tablename__ = "contas_sociais"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    usuario_id = Column(Integer, ForeignKey("usuarios.id", ondelete="CASCADE"), nullable=False)
+    plataforma = Column(String(50), nullable=False)
+    id_pagina_perfil = Column(String(100), nullable=False)
+    nome_pagina_perfil = Column(String(255), nullable=True)
+    token_acesso = Column(Text, nullable=False)
+    token_atualizacao = Column(Text, nullable=True)
+    token_expiracao_em = Column(DateTime, nullable=True)
+    is_ativo = Column(Boolean, default=True)
+    criado_em = Column(DateTime, server_default=func.now())
+    atualizado_em = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    
+    # Relacionamentos
+    usuario = relationship("Usuario", back_populates="contas_sociais")
+    conteudos = relationship("Conteudo", back_populates="conta_social")

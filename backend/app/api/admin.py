@@ -4,10 +4,18 @@ from typing import List, Dict, Any
 from datetime import datetime
 from app.database import get_db
 from app.models import Usuario, Conteudo
-from app.api.auth import get_current_user, get_password_hash
+from app.core.security import get_current_user
+from app.core.security import create_access_token  # Se precisar
 from pydantic import BaseModel, EmailStr
+import hashlib
+import secrets
 
 router = APIRouter()
+
+# Função de hash (copiada do auth.py)
+def get_password_hash(password: str) -> str:
+    salt = secrets.token_hex(16)
+    return hashlib.pbkdf2_hmac('sha256', password.encode(), salt.encode(), 100000).hex() + ":" + salt
 
 # Schemas
 class AdminUserResponse(BaseModel):
