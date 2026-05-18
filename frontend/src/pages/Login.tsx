@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 
-export const Login: React.FC = () => {
+const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -16,18 +16,10 @@ export const Login: React.FC = () => {
     setLoading(true);
 
     try {
-      // Usar o login do contexto diretamente
       await login(email, password);
       navigate('/dashboard');
-    } catch (err: any) {
-      console.error('Erro no login:', err);
-      if (err.response?.status === 422) {
-        setError('Formato de dados inválido. Tente novamente.');
-      } else if (err.response?.status === 401) {
-        setError('Email ou senha inválidos');
-      } else {
-        setError('Erro ao fazer login. Tente novamente.');
-      }
+    } catch (err) {
+      setError('Email ou senha inválidos');
     } finally {
       setLoading(false);
     }
@@ -66,3 +58,5 @@ export const Login: React.FC = () => {
     </div>
   );
 };
+
+export default Login;

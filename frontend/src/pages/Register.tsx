@@ -1,121 +1,134 @@
-import React, { useState } from 'react'
-import { authService } from '../services/auth.service'
-import './register.css'
-
-type Country = {
-  code: string
-  name: string
-  dial: string
-  flag: string
-}
-
-const COUNTRIES: Country[] = [
-  { code: 'AO', name: 'Angola', dial: '+244', flag: '🇦🇴' },
-  { code: 'PT', name: 'Portugal', dial: '+351', flag: '🇵🇹' },
-  { code: 'BR', name: 'Brasil', dial: '+55', flag: '🇧🇷' },
-  { code: 'MZ', name: 'Moçambique', dial: '+258', flag: '🇲🇿' },
-]
-
-function scorePassword(pw: string) {
-  let score = 0
-  if (pw.length >= 8) score += 30
-  if (/[A-Z]/.test(pw)) score += 20
-  if (/[0-9]/.test(pw)) score += 20
-  if (/[^A-Za-z0-9]/.test(pw)) score += 20
-  if (pw.length >= 12) score += 10
-  return Math.min(100, score)
-}
+import React, { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate, Link } from 'react-router-dom';
 
 const Register: React.FC = () => {
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [country, setCountry] = useState(COUNTRIES[0].code)
-  const [phone, setPhone] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirm, setConfirm] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState<string | null>(null)
+  const [nome, setNome] = useState('');
+  const [email, setEmail] = useState('');
+  const [senha, setSenha] = useState('');
+  const [confirmarSenha, setConfirmarSenha] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { register } = useAuth();
+  const navigate = useNavigate();
 
-  const pwScore = scorePassword(password)
+  const calcularForcaSenha = (senha: string): { porcentagem: number; nivel: string; cor: string } => {
+    let pontuacao = 0;
+    if (senha.length >= 6) pontuacao += 20;
+    if (/[A-Z]/.test(senha)) pontuacao += 20;
+    if (/[a-z]/.test(senha)) pontuacao += 20;
+    if (/[0-9]/.test(senha)) pontuacao += 20;
+    if (/[!@#$%^&*]/.test(senha)) pontuacao += 20;
+    
+    let nivel = '';
+    let cor = '';
+    if (pontuacao < 40) { nivel = 'Fraca'; cor = '#f44336'; }
+    else if (pontuacao < 80) { nivel = 'Média'; cor = '#ff9800'; }
+    else { nivel = 'Forte'; cor = '#4caf50'; }
+    
+    return { porcentagem: pontuacao, nivel, cor };
+  };
+
+  const forcaSenha = calcularForcaSenha(senha);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setMessage(null)
-    if (password !== confirm) {
-      setMessage('A senha e a confirmação não coincidem.')
-      return
+    e.preventDefault();
+    setError('');
+
+    if (nome.length < 3) {
+      setError('Nome deve ter pelo menos 3 caracteres');
+      return;
     }
-    if (pwScore < 80) {
-      setMessage('A senha deve atingir pelo menos 80% de força.')
-      return
+    if (!email.includes('@')) {
+      setError('Email inválido');
+      return;
     }
-    setLoading(true)
+    if (forcaSenha.porcentagem < 80) {
+      setError(`Senha muito fraca (${forcaSenha.porcentagem}%). Atinga pelo menos 80%`);
+      return;
+    }
+    if (senha !== confirmarSenha) {
+      setError('As senhas não coincidem');
+      return;
+    }
+
+    setLoading(true);
     try {
-      const sel = COUNTRIES.find((c) => c.code === country)!
-      await authService.register({
-        nome: name,
-        email,
-        senha: password,
-        telefone: `${sel.dial} ${phone}`,
-      })
-      setMessage('Cadastro realizado com sucesso. Faça login.')
-      setName('')
-      setEmail('')
-      setPhone('')
-      setPassword('')
-      setConfirm('')
-    } catch (err: any) {
-      setMessage(err?.response?.data?.detail || 'Erro ao cadastrar')
+      await register(nome, email, senha);
+      navigate('/dashboard');
+    } catch (err) {
+      setError('Erro ao cadastrar. Email pode já estar em uso.');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
-    <div className="register-container">
-      <h2>Cadastro</h2>
-      <form onSubmit={handleSubmit} className="register-form">
-        <label>
-          Nome
-          <input value={name} onChange={(e) => setName(e.target.value)} required />
-        </label>
-        <label>
-          E-mail
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        </label>
-        <label className="phone-row">
-          Telefone
-          <div className="phone-input">
-            <select value={country} onChange={(e) => setCountry(e.target.value)}>
-              {COUNTRIES.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.flag} {c.name} ({c.dial})
-                </option>
-              ))}
-            </select>
-            <input value={phone} onChange={(e) => setPhone(e.target.value)} required placeholder="912345678" />
-          </div>
-        </label>
-        <label>
-          Senha
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-        </label>
-
-        <div className="pw-meter">
-          <div className="meter-bar" style={{ width: `${pwScore}%` }} />
-          <div className="meter-text">Força: {pwScore}%</div>
-        </div>
-
-        <label>
-          Confirmar Senha
-          <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required />
-        </label>
-
-        <button type="submit" disabled={loading}>{loading ? 'Cadastrando...' : 'Cadastrar'}</button>
-        {message && <div className="message">{message}</div>}
-      </form>
+    <div className="container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+      <div className="card" style={{ width: '450px' }}>
+        <h1 style={{ textAlign: 'center', marginBottom: '20px', color: '#667eea' }}>Criar Conta</h1>
+        
+        <form onSubmit={handleSubmit}>
+          <input
+            type="text"
+            placeholder="Nome completo"
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            style={{ width: '100%', padding: '10px', marginBottom: '15px', border: '1px solid #ddd', borderRadius: '5px' }}
+            required
+          />
+          
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            style={{ width: '100%', padding: '10px', marginBottom: '15px', border: '1px solid #ddd', borderRadius: '5px' }}
+            required
+          />
+          
+          <input
+            type="password"
+            placeholder="Senha"
+            value={senha}
+            onChange={(e) => setSenha(e.target.value)}
+            style={{ width: '100%', padding: '10px', marginBottom: '10px', border: '1px solid #ddd', borderRadius: '5px' }}
+            required
+          />
+          
+          {senha && (
+            <div style={{ marginBottom: '15px' }}>
+              <div style={{ height: '8px', background: '#e0e0e0', borderRadius: '4px', overflow: 'hidden' }}>
+                <div style={{ width: `${forcaSenha.porcentagem}%`, height: '100%', background: forcaSenha.cor, transition: 'width 0.3s' }} />
+              </div>
+              <p style={{ fontSize: '12px', color: forcaSenha.cor, marginTop: '5px' }}>
+                Força: {forcaSenha.nivel} ({forcaSenha.porcentagem}%)
+              </p>
+            </div>
+          )}
+          
+          <input
+            type="password"
+            placeholder="Confirmar senha"
+            value={confirmarSenha}
+            onChange={(e) => setConfirmarSenha(e.target.value)}
+            style={{ width: '100%', padding: '10px', marginBottom: '20px', border: '1px solid #ddd', borderRadius: '5px' }}
+            required
+          />
+          
+          {error && <p style={{ color: 'red', marginBottom: '10px', textAlign: 'center' }}>{error}</p>}
+          
+          <button type="submit" className="btn-primary" style={{ width: '100%' }} disabled={loading}>
+            {loading ? 'Cadastrando...' : 'Cadastrar'}
+          </button>
+        </form>
+        
+        <p style={{ textAlign: 'center', marginTop: '20px' }}>
+          Já tem conta? <Link to="/login" style={{ color: '#667eea' }}>Faça login</Link>
+        </p>
+      </div>
     </div>
-  )
-}
+  );
+};
 
-export default Register
+export default Register;
