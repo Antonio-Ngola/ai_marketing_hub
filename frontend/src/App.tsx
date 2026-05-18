@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import AdminUsers from './pages/admin/AdminUsers';
 import ConteudoList from './pages/ConteudoList';
+import ForgotPassword from './pages/ForgotPassword';
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/dashboard" element={
           <PrivateRoute>
             <Dashboard />

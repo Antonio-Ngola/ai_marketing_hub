@@ -47,10 +47,19 @@ const Login: React.FC = () => {
             required
           />
           {error && <p style={{ color: 'red', marginBottom: '10px', textAlign: 'center' }}>{error}</p>}
+          
           <button type="submit" className="btn-primary" style={{ width: '100%' }} disabled={loading}>
             {loading ? 'Carregando...' : 'Entrar'}
           </button>
+          
+          {/* Link Esqueci minha senha */}
+          <p style={{ textAlign: 'center', marginTop: '15px' }}>
+            <Link to="/forgot-password" style={{ color: '#667eea', textDecoration: 'none', fontSize: '14px' }}>
+              Esqueci minha senha
+            </Link>
+          </p>
         </form>
+        
         <p style={{ textAlign: 'center', marginTop: '20px' }}>
           Não tem conta? <Link to="/register" style={{ color: '#667eea' }}>Cadastre-se</Link>
         </p>
