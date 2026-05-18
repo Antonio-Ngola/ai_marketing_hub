@@ -1,24 +1,33 @@
-import api from './api'
+import api from './api';
+import { User, LoginResponse } from '../types/index';
 
-type RegisterPayload = {
-  name: string
-  email: string
-  phone: string
-  password: string
-}
+export const authService = {
+  async login(email: string, password: string): Promise<LoginResponse> {
+    // Usar URLSearchParams para form data
+    const params = new URLSearchParams();
+    params.append('username', email);
+    params.append('password', password);
+    
+    const response = await api.post('/api/auth/login', params, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+    });
+    return response.data;
+  },
 
-export async function register(payload: RegisterPayload) {
-  return api.post('/api/auth/register', payload)
-}
+  async register(userData: { nome: string; email: string; senha: string; telefone?: string }): Promise<User> {
+    const response = await api.post('/api/auth/register', {
+      nome: userData.nome,
+      email: userData.email,
+      senha: userData.senha,
+      telefone: userData.telefone || '',
+    });
+    return response.data;
+  },
 
-type LoginPayload = { email: string; password: string }
-
-export async function login(payload: LoginPayload) {
-  return api.post('/api/auth/login', payload)
-}
-
-export async function me() {
-  return api.get('/api/auth/me')
-}
-
-export default { register, login, me }
+  async getMe(): Promise<User> {
+    const response = await api.get('/api/auth/me');
+    return response.data;
+  },
+};

@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { register as apiRegister } from '../services/auth.service'
+import { authService } from '../services/auth.service'
 import './register.css'
 
 type Country = {
@@ -52,13 +52,12 @@ const Register: React.FC = () => {
     setLoading(true)
     try {
       const sel = COUNTRIES.find((c) => c.code === country)!
-      const payload = {
-        name,
+      await authService.register({
+        nome: name,
         email,
-        phone: `${sel.dial} ${phone}`,
-        password,
-      }
-      await apiRegister(payload)
+        senha: password,
+        telefone: `${sel.dial} ${phone}`,
+      })
       setMessage('Cadastro realizado com sucesso. Faça login.')
       setName('')
       setEmail('')

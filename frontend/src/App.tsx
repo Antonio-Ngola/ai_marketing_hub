@@ -1,5 +1,4 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import AuthProvider from './contexts/AuthContext';
 import PrivateRoute from './components/PrivateRoute';
 import AdminRoute from './components/AdminRoute';
 import { Login } from './pages/Login';
@@ -12,8 +11,7 @@ import { ConteudoList } from './pages/ConteudoList';
 function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <Routes>
+      <Routes>
           {/* Rotas públicas */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -45,7 +43,6 @@ function App() {
           {/* Rota padrão */}
           <Route path="/" element={<Navigate to="/dashboard" />} />
         </Routes>
-      </AuthProvider>
     </BrowserRouter>
   );
 }

@@ -3,21 +3,28 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+import hashlib
+import secrets
 from app.database import get_db
 from app.models import Usuario
 from app.schemas.usuario import UsuarioCreate, UsuarioResponse, Token
 from app.core.config import settings
 
 router = APIRouter()
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+# Função simples de hash (apenas para teste - NÃO use em produção!)
+def get_password_hash(password: str) -> str:
+    salt = secrets.token_hex(16)
+    return hashlib.pbkdf2_hmac('sha256', password.encode(), salt.encode(), 100000).hex() + ":" + salt
 
-def get_password_hash(password):
-    return pwd_context.hash(password)
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    try:
+        stored_hash, salt = hashed_password.split(":")
+        new_hash = hashlib.pbkdf2_hmac('sha256', plain_password.encode(), salt.encode(), 100000).hex()
+        return stored_hash == new_hash
+    except:
+        return False
 
 def authenticate_user(db: Session, email: str, password: str):
     user = db.query(Usuario).filter(Usuario.email == email).first()

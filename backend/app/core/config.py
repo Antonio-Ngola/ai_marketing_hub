@@ -6,13 +6,12 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql://postgres:admin@localhost:5432/ai_marketing_hub"
     
     # JWT
-    SECRET_KEY: str = "your-secret-key-change-in-production"
+    SECRET_KEY: str = "your-secret-key-change-this-in-production"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
-    # Extra settings (allow extra fields)
     class Config:
         env_file = "../.env"
-        extra = "ignore"  # Isso permite campos extras no .env
-    
+        extra = "ignore"  # Ignora campos extras do .env
+
 settings = Settings()

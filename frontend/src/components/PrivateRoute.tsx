@@ -1,11 +1,11 @@
-import React, { useContext } from 'react'
+import React from 'react'
 import { Navigate } from 'react-router-dom'
-import { AuthContext } from '../contexts/AuthContext'
+import { useAuth } from '../contexts/AuthContext'
 
 const PrivateRoute: React.FC<{ children: JSX.Element }> = ({ children }) => {
-  const ctx = useContext(AuthContext)
-  if (!ctx) return <Navigate to="/login" />
-  if (!ctx.token) return <Navigate to="/login" />
+  const { user, loading } = useAuth()
+  if (loading) return <div>Carregando...</div>
+  if (!user) return <Navigate to="/login" />
   return children
 }
 
