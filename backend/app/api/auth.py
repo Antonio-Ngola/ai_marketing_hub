@@ -84,7 +84,7 @@ def send_verification(
     request: dict,
     db: Session = Depends(get_db)
 ):
-    """Enviar código de verificação"""
+    """Enviar código de verificação para cadastro"""
     contact = request.get("contact")
     method = request.get("method")
     
@@ -120,7 +120,8 @@ def verify_code(
     if not contact or not code:
         raise HTTPException(status_code=400, detail="Contact e code são obrigatórios")
     
-    is_valid = VerificationService.verify_code(contact, code)
+    # Verificar código SEM remover (para usar depois no reset-password)
+    is_valid = VerificationService.verify_code(contact, code, remove=False)
     
     if not is_valid:
         raise HTTPException(status_code=400, detail="Código inválido ou expirado")
@@ -166,8 +167,12 @@ def reset_password(
     if not email or not code or not new_password:
         raise HTTPException(status_code=400, detail="Email, código e nova senha são obrigatórios")
     
-    # Verificar código
-    is_valid = VerificationService.verify_code(email, code)
+    # Validar senha
+    if len(new_password) < 6:
+        raise HTTPException(status_code=400, detail="A senha deve ter pelo menos 6 caracteres")
+    
+    # Verificar código (e remover após verificação bem-sucedida)
+    is_valid = VerificationService.verify_code(email, code, remove=True)
     
     if not is_valid:
         raise HTTPException(status_code=400, detail="Código inválido ou expirado")

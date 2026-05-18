@@ -1,10 +1,6 @@
 import random
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
 from typing import Dict
-import os
 
 # Armazenamento temporário de códigos (em produção usar Redis)
 verification_codes: Dict[str, dict] = {}
@@ -31,7 +27,6 @@ class VerificationService:
     def send_by_sms(phone: str, code: str) -> bool:
         """Enviar código por SMS"""
         try:
-            # Para desenvolvimento, apenas simular
             print(f"📱 Simulando SMS para {phone}: Código {code}")
             return True
         except Exception as e:
@@ -42,7 +37,6 @@ class VerificationService:
     def send_by_whatsapp(phone: str, code: str) -> bool:
         """Enviar código por WhatsApp"""
         try:
-            # Para desenvolvimento, apenas simular
             print(f"💬 Simulando WhatsApp para {phone}: Código {code}")
             return True
         except Exception as e:
@@ -72,26 +66,40 @@ class VerificationService:
                 'expires_at': datetime.now() + timedelta(minutes=10),
                 'method': method
             }
+            print(f"💾 Código armazenado para {contact}: {code} (expira em 10 min)")
             return True, "Código enviado com sucesso"
         
         return False, "Erro ao enviar código"
     
     @staticmethod
-    def verify_code(contact: str, code: str) -> bool:
-        """Verificar se o código é válido"""
+    def verify_code(contact: str, code: str, remove: bool = True) -> bool:
+        """Verificar se o código é válido
+        
+        Args:
+            contact: Email ou telefone
+            code: Código de 6 dígitos
+            remove: Se True, remove o código após verificação (padrão True)
+        """
         stored = verification_codes.get(contact)
         
         if not stored:
+            print(f"❌ Nenhum código encontrado para {contact}")
             return False
         
         if datetime.now() > stored['expires_at']:
             # Código expirado
+            print(f"⏰ Código expirado para {contact}")
             del verification_codes[contact]
             return False
         
         if stored['code'] == code:
             # Código válido
-            del verification_codes[contact]
+            if remove:
+                print(f"✅ Código válido para {contact}, removendo do cache")
+                del verification_codes[contact]
+            else:
+                print(f"✅ Código válido para {contact}, mantendo no cache")
             return True
         
+        print(f"❌ Código incorreto para {contact}: esperado {stored['code']}, recebido {code}")
         return False
