@@ -3,6 +3,8 @@ from app.api import auth, conteudo
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import auth
+from app.api import auth, conteudo, upload
+from fastapi.staticfiles import StaticFiles
 from app.database import engine, Base
 
 load_dotenv()
@@ -30,6 +32,8 @@ app.add_middleware(
 # Rotas
 app.include_router(auth.router, prefix="/api/auth", tags=["autenticacao"])
 app.include_router(conteudo.router, prefix="/api/conteudo", tags=["conteudo"])
+app.include_router(upload.router, prefix="/api/upload", tags=["upload"])
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 @app.get("/")
 async def root():

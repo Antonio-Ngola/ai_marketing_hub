@@ -136,3 +136,84 @@ def rejeitar_conteudo(
     conteudo.status = "rejeitado"
     db.commit()
     return {"message": "Conteúdo rejeitado"}
+# Adicione estas funções no final do arquivo backend/app/api/conteudo.py
+
+@router.put("/{conteudo_id}", response_model=ConteudoResponse)
+def atualizar_conteudo(
+    conteudo_id: int,
+    conteudo_update: ConteudoUpdate,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    """Atualizar um conteúdo"""
+    conteudo = db.query(Conteudo).filter(
+        Conteudo.id == conteudo_id,
+        Conteudo.usuario_id == current_user.id
+    ).first()
+    
+    if not conteudo:
+        raise HTTPException(status_code=404, detail="Conteúdo não encontrado")
+    
+    for key, value in conteudo_update.model_dump(exclude_unset=True).items():
+        setattr(conteudo, key, value)
+    
+    db.commit()
+    db.refresh(conteudo)
+    return conteudo
+
+@router.delete("/{conteudo_id}")
+def deletar_conteudo(
+    conteudo_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    """Deletar um conteúdo"""
+    conteudo = db.query(Conteudo).filter(
+        Conteudo.id == conteudo_id,
+        Conteudo.usuario_id == current_user.id
+    ).first()
+    
+    if not conteudo:
+        raise HTTPException(status_code=404, detail="Conteúdo não encontrado")
+    
+    db.delete(conteudo)
+    db.commit()
+    return {"message": "Conteúdo deletado com sucesso"}
+
+@router.patch("/{conteudo_id}/aprovar")
+def aprovar_conteudo(
+    conteudo_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    """Aprovar um conteúdo pendente"""
+    conteudo = db.query(Conteudo).filter(
+        Conteudo.id == conteudo_id,
+        Conteudo.usuario_id == current_user.id
+    ).first()
+    
+    if not conteudo:
+        raise HTTPException(status_code=404, detail="Conteúdo não encontrado")
+    
+    conteudo.status = "aprovado"
+    db.commit()
+    return {"message": "Conteúdo aprovado com sucesso"}
+
+@router.patch("/{conteudo_id}/rejeitar")
+def rejeitar_conteudo(
+    conteudo_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    """Rejeitar um conteúdo pendente"""
+    conteudo = db.query(Conteudo).filter(
+        Conteudo.id == conteudo_id,
+        Conteudo.usuario_id == current_user.id
+    ).first()
+    
+    if not conteudo:
+        raise HTTPException(status_code=404, detail="Conteúdo não encontrado")
+    
+    conteudo.status = "rejeitado"
+    db.commit()
+    return {"message": "Conteúdo rejeitado"}
