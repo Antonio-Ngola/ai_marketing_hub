@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from datetime import timedelta
+from datetime import datetime, timedelta
 import hashlib
 import secrets
 from app.database import get_db
@@ -9,6 +9,7 @@ from app.models import Usuario
 from app.schemas.usuario import UsuarioCreate, UsuarioResponse, Token
 from app.core.config import settings
 from app.core.security import create_access_token, get_current_user
+from app.services.verification_service import VerificationService
 
 router = APIRouter()
 
@@ -75,3 +76,53 @@ def read_users_me(current_user: Usuario = Depends(get_current_user)):
         "is_admin": getattr(current_user, 'is_admin', False),
         "criado_em": current_user.criado_em
     }
+
+# ==================== VERIFICAÇÃO ====================
+
+@router.post("/send-verification")
+def send_verification(
+    request: dict,
+    db: Session = Depends(get_db)
+):
+    """Enviar código de verificação"""
+    contact = request.get("contact")
+    method = request.get("method")
+    
+    if not contact or not method:
+        raise HTTPException(status_code=400, detail="Contact e method são obrigatórios")
+    
+    # Verificar se o contato já está em uso
+    if method == 'email':
+        existing_user = db.query(Usuario).filter(Usuario.email == contact).first()
+        if existing_user:
+            raise HTTPException(status_code=400, detail="Email já está em uso")
+    else:
+        existing_user = db.query(Usuario).filter(Usuario.telefone == contact).first()
+        if existing_user:
+            raise HTTPException(status_code=400, detail="Telefone já está em uso")
+    
+    success, message = VerificationService.send_verification(contact, method)
+    
+    if not success:
+        raise HTTPException(status_code=500, detail=message)
+    
+    return {"message": message, "contact": contact, "method": method}
+
+@router.post("/verify-code")
+def verify_code(
+    request: dict,
+    db: Session = Depends(get_db)
+):
+    """Verificar código de autenticação"""
+    contact = request.get("contact")
+    code = request.get("code")
+    
+    if not contact or not code:
+        raise HTTPException(status_code=400, detail="Contact e code são obrigatórios")
+    
+    is_valid = VerificationService.verify_code(contact, code)
+    
+    if not is_valid:
+        raise HTTPException(status_code=400, detail="Código inválido ou expirado")
+    
+    return {"message": "Código verificado com sucesso", "verified": True}
