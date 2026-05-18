@@ -13,6 +13,7 @@ class Usuario(Base):
     senha_hash = Column(String(255), nullable=False)
     telefone = Column(String(20))
     is_ativo = Column(Boolean, default=True)
+    is_admin = Column(Boolean, default=False)
     criado_em = Column(DateTime, server_default=func.now())
     atualizado_em = Column(DateTime, server_default=func.now(), onupdate=func.now())
     
