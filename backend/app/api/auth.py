@@ -126,3 +126,60 @@ def verify_code(
         raise HTTPException(status_code=400, detail="Código inválido ou expirado")
     
     return {"message": "Código verificado com sucesso", "verified": True}
+
+# ==================== RECUPERAÇÃO DE SENHA ====================
+
+@router.post("/forgot-password")
+def forgot_password(
+    request: dict,
+    db: Session = Depends(get_db)
+):
+    """Enviar código para recuperação de senha"""
+    email = request.get("email")
+    
+    if not email:
+        raise HTTPException(status_code=400, detail="Email é obrigatório")
+    
+    # Verificar se o email existe
+    user = db.query(Usuario).filter(Usuario.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Email não encontrado")
+    
+    # Enviar código de verificação
+    success, message = VerificationService.send_verification(email, "email")
+    
+    if not success:
+        raise HTTPException(status_code=500, detail=message)
+    
+    return {"message": "Código enviado para seu email", "email": email}
+
+@router.post("/reset-password")
+def reset_password(
+    request: dict,
+    db: Session = Depends(get_db)
+):
+    """Redefinir senha com código de verificação"""
+    email = request.get("email")
+    code = request.get("code")
+    new_password = request.get("new_password")
+    
+    if not email or not code or not new_password:
+        raise HTTPException(status_code=400, detail="Email, código e nova senha são obrigatórios")
+    
+    # Verificar código
+    is_valid = VerificationService.verify_code(email, code)
+    
+    if not is_valid:
+        raise HTTPException(status_code=400, detail="Código inválido ou expirado")
+    
+    # Atualizar senha
+    user = db.query(Usuario).filter(Usuario.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    
+    hashed_password = get_password_hash(new_password)
+    user.senha_hash = hashed_password
+    
+    db.commit()
+    
+    return {"message": "Senha redefinida com sucesso"}
