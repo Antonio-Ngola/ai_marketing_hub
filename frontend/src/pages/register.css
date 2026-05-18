@@ -1,0 +1,53 @@
+.register-container {
+  max-width: 480px;
+  margin: 1.5rem auto;
+  padding: 1.25rem;
+  border: 1px solid #e6e6e6;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.register-form label {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+}
+
+.register-form input,
+.register-form select {
+  width: 100%;
+  padding: 0.5rem;
+  margin-top: 0.35rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.phone-row .phone-input {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.phone-row select { width: 40%; }
+.phone-row input { flex: 1; }
+
+.pw-meter { margin: 0.5rem 0 1rem 0; }
+.meter-bar {
+  height: 8px;
+  background: linear-gradient(90deg,#4caf50,#ffc107);
+  border-radius: 4px;
+  transition: width 150ms ease;
+}
+.meter-text { font-size: 0.85rem; margin-top: 0.25rem; }
+
+.register-form button {
+  margin-top: 0.75rem;
+  padding: 0.6rem 1rem;
+  background: #1976d2;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.register-form button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.message { margin-top: 0.8rem; color: #d32f2f; }
