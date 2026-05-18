@@ -9,7 +9,17 @@ const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>Carregando...</div>;
   }
 
-  return user ? <>{children}</> : <Navigate to="/login" />;
+  if (!user) {
+    return <Navigate to="/login" />;
+  }
+
+  // Se for admin, redirecionar para admin panel em vez de acessar rotas normais
+  const isAdmin = user.is_admin === true || user.email === 'admin@aimarketing.com';
+  if (isAdmin) {
+    return <Navigate to="/admin" />;
+  }
+
+  return <>{children}</>;
 };
 
 export default PrivateRoute;

@@ -20,9 +20,19 @@ const Dashboard: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
 
+  // Redirecionar admin para o painel admin
   useEffect(() => {
+    const isAdmin = user?.is_admin === true || user?.email === 'admin@aimarketing.com';
+    if (isAdmin) {
+      navigate('/admin');
+    }
+  }, [user, navigate]);
+
+  useEffect(() => {
+    if (!user || (user?.is_admin === true)) return;
+    
     carregarStats();
-  }, []);
+  }, [user]);
 
   const carregarStats = async () => {
     try {
@@ -51,7 +61,11 @@ const Dashboard: React.FC = () => {
     navigate('/login');
   };
 
+  // Se for admin, não renderiza o dashboard (redireciona)
   const isAdmin = user?.is_admin === true || user?.email === 'admin@aimarketing.com';
+  if (isAdmin) {
+    return null;
+  }
 
   const cards = [
     { title: 'Total de Conteúdos', value: stats.total_conteudos, icon: '📝', color: '#667eea', bg: '#eef2ff' },
@@ -77,7 +91,6 @@ const Dashboard: React.FC = () => {
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center',
-        boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
         flexWrap: 'wrap',
         gap: '15px'
       }}>
@@ -100,21 +113,6 @@ const Dashboard: React.FC = () => {
           >
             📝 Conteúdos
           </button>
-          {isAdmin && (
-            <button 
-              onClick={() => navigate('/admin')} 
-              style={{ 
-                padding: '8px 20px', 
-                background: '#48bb78', 
-                color: 'white', 
-                border: 'none', 
-                borderRadius: '8px', 
-                cursor: 'pointer'
-              }}
-            >
-              👑 Admin
-            </button>
-          )}
           <button 
             onClick={handleLogout} 
             style={{ 
