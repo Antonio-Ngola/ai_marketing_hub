@@ -1,4 +1,5 @@
 from dotenv import load_dotenv
+from app.api import auth, conteudo
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import auth
@@ -28,6 +29,7 @@ app.add_middleware(
 
 # Rotas
 app.include_router(auth.router, prefix="/api/auth", tags=["autenticacao"])
+app.include_router(conteudo.router, prefix="/api/conteudo", tags=["conteudo"])
 
 @app.get("/")
 async def root():
