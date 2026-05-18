@@ -1,25 +1,39 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime
 from app.database import get_db
 from app.models import Usuario, Conteudo
-from app.api.auth import get_current_user
-from pydantic import BaseModel
+from app.api.auth import get_current_user, get_password_hash
+from pydantic import BaseModel, EmailStr
 
 router = APIRouter()
 
-# Schema sem o campo telefone obrigatório
+# Schemas
 class AdminUserResponse(BaseModel):
     id: int
     nome: str
     email: str
+    telefone: str = ""
     is_ativo: bool
     is_admin: bool = False
     criado_em: datetime
     
     class Config:
         from_attributes = True
+
+class AdminUserCreate(BaseModel):
+    nome: str
+    email: EmailStr
+    senha: str
+    telefone: str = ""
+    is_admin: bool = False
+
+class AdminUserUpdate(BaseModel):
+    nome: str
+    email: EmailStr
+    telefone: str = ""
+    is_admin: bool = False
 
 def verificar_admin(current_user: Usuario = Depends(get_current_user)):
     if not getattr(current_user, 'is_admin', False) and current_user.email != "admin@aimarketing.com":
@@ -37,6 +51,102 @@ def listar_usuarios(
     """Listar todos os usuários"""
     usuarios = db.query(Usuario).all()
     return usuarios
+
+@router.get("/users/{user_id}", response_model=AdminUserResponse)
+def obter_usuario(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(verificar_admin)
+):
+    usuario = db.query(Usuario).filter(Usuario.id == user_id).first()
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    return usuario
+
+@router.post("/users", response_model=AdminUserResponse)
+def criar_usuario(
+    user_data: AdminUserCreate,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(verificar_admin)
+):
+    """Criar um novo usuário"""
+    # Verificar se email já existe
+    existing_user = db.query(Usuario).filter(Usuario.email == user_data.email).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email já está em uso")
+    
+    hashed_password = get_password_hash(user_data.senha)
+    novo_usuario = Usuario(
+        nome=user_data.nome,
+        email=user_data.email,
+        senha_hash=hashed_password,
+        telefone=user_data.telefone,
+        is_admin=user_data.is_admin,
+        is_ativo=True
+    )
+    db.add(novo_usuario)
+    db.commit()
+    db.refresh(novo_usuario)
+    return novo_usuario
+
+@router.put("/users/{user_id}", response_model=AdminUserResponse)
+def atualizar_usuario(
+    user_id: int,
+    user_data: AdminUserUpdate,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(verificar_admin)
+):
+    """Atualizar dados de um usuário"""
+    usuario = db.query(Usuario).filter(Usuario.id == user_id).first()
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    
+    usuario.nome = user_data.nome
+    usuario.email = user_data.email
+    usuario.telefone = user_data.telefone
+    usuario.is_admin = user_data.is_admin
+    
+    db.commit()
+    db.refresh(usuario)
+    return usuario
+
+@router.patch("/users/{user_id}/toggle-status")
+def toggle_usuario_status(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(verificar_admin)
+):
+    """Ativar/Inativar um usuário"""
+    usuario = db.query(Usuario).filter(Usuario.id == user_id).first()
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    
+    usuario.is_ativo = not usuario.is_ativo
+    db.commit()
+    
+    return {
+        "message": f"Usuário {'ativado' if usuario.is_ativo else 'inativado'} com sucesso",
+        "is_ativo": usuario.is_ativo
+    }
+
+@router.delete("/users/{user_id}")
+def deletar_usuario(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(verificar_admin)
+):
+    """Deletar um usuário permanentemente"""
+    usuario = db.query(Usuario).filter(Usuario.id == user_id).first()
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    
+    if usuario.id == current_user.id:
+        raise HTTPException(status_code=400, detail="Não é possível deletar seu próprio usuário")
+    
+    db.delete(usuario)
+    db.commit()
+    
+    return {"message": "Usuário deletado com sucesso"}
 
 @router.get("/stats")
 def obter_estatisticas(
@@ -59,74 +169,3 @@ def obter_estatisticas(
         "usuarios_ativos": usuarios_ativos,
         "usuarios_inativos": usuarios_inativos
     }
-
-@router.get("/users/{user_id}")
-def obter_usuario(
-    user_id: int,
-    db: Session = Depends(get_db),
-    current_user: Usuario = Depends(verificar_admin)
-):
-    usuario = db.query(Usuario).filter(Usuario.id == user_id).first()
-    if not usuario:
-        raise HTTPException(status_code=404, detail="Usuário não encontrado")
-    
-    return usuario
-
-@router.put("/users/{user_id}")
-def atualizar_usuario(
-    user_id: int,
-    user_data: dict,
-    db: Session = Depends(get_db),
-    current_user: Usuario = Depends(verificar_admin)
-):
-    usuario = db.query(Usuario).filter(Usuario.id == user_id).first()
-    if not usuario:
-        raise HTTPException(status_code=404, detail="Usuário não encontrado")
-    
-    if 'nome' in user_data:
-        usuario.nome = user_data['nome']
-    if 'email' in user_data:
-        usuario.email = user_data['email']
-    if 'is_admin' in user_data:
-        usuario.is_admin = user_data['is_admin']
-    
-    db.commit()
-    db.refresh(usuario)
-    
-    return {"message": "Usuário atualizado com sucesso"}
-
-@router.patch("/users/{user_id}/toggle-status")
-def toggle_usuario_status(
-    user_id: int,
-    db: Session = Depends(get_db),
-    current_user: Usuario = Depends(verificar_admin)
-):
-    usuario = db.query(Usuario).filter(Usuario.id == user_id).first()
-    if not usuario:
-        raise HTTPException(status_code=404, detail="Usuário não encontrado")
-    
-    usuario.is_ativo = not usuario.is_ativo
-    db.commit()
-    
-    return {
-        "message": f"Usuário {'ativado' if usuario.is_ativo else 'inativado'} com sucesso",
-        "is_ativo": usuario.is_ativo
-    }
-
-@router.delete("/users/{user_id}")
-def deletar_usuario(
-    user_id: int,
-    db: Session = Depends(get_db),
-    current_user: Usuario = Depends(verificar_admin)
-):
-    usuario = db.query(Usuario).filter(Usuario.id == user_id).first()
-    if not usuario:
-        raise HTTPException(status_code=404, detail="Usuário não encontrado")
-    
-    if usuario.id == current_user.id:
-        raise HTTPException(status_code=400, detail="Não é possível deletar seu próprio usuário")
-    
-    db.delete(usuario)
-    db.commit()
-    
-    return {"message": "Usuário deletado com sucesso"}
